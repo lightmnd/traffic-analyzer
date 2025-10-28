@@ -1,0 +1,12 @@
+file;start_time;end_time;duration_seconds;device_private_ip;device_public_ip;server_ip;server_port;peer_public_ip;voip_app_guess;rtp_packets_detected;stun_event_count
+fb_mess-Samsung_S7-iPhone_6.pcap;2021-07-23T15:08:34.523744;2021-07-23T15:13:35.453224;301;10.215.173.1;Not Found;10.215.173.2;34890;10.215.173.2;Generic STUN/TURN (possible Teams/WhatsApp/other);46;0
+fb_mess-Samsung_S7-iPhone_6.pcap;2021-07-23T15:08:43.064177;2021-07-23T15:13:33.996587;291;10.215.173.1;176.200.95.129:41385;31.13.86.5;34890;31.13.86.5;Generic STUN/TURN (possible Teams/WhatsApp/other);0;30
+fb_mess-Samsung_S7-iPhone_6.pcap;2021-07-23T15:08:43.480797;2021-07-23T15:13:39.136416;296;10.215.173.1;31.13.86.54:48167;31.13.86.54;34890;31.13.86.54;Generic STUN/TURN (possible Teams/WhatsApp/other);95;7
+fb_mess-Samsung_S7-iPhone_6.pcap;2021-07-23T15:08:43.484836;2021-07-23T15:13:39.073942;296;10.215.173.1;Not Found;31.13.86.128;34890;31.13.86.128;Generic STUN/TURN (possible Teams/WhatsApp/other);0;539
+fb_mess-Samsung_S7-iPhone_6.pcap;2021-07-23T15:08:43.488078;2021-07-23T15:13:39.077988;296;10.215.173.1;Not Found;31.13.92.128;34890;31.13.92.128;Generic STUN/TURN (possible Teams/WhatsApp/other);0;7
+fb_mess-Samsung_S7-iPhone_6.pcap;2021-07-23T15:08:43.490276;2021-07-23T15:13:39.090243;296;10.215.173.1;Not Found;157.240.20.128;34890;157.240.20.128;Generic STUN/TURN (possible Teams/WhatsApp/other);0;18
+fb_mess-Samsung_S7-iPhone_6.pcap;2021-07-23T15:08:43.568946;2021-07-23T15:08:43.820915;0;10.215.173.1;Not Found;31.13.86.169;34890;31.13.86.169;Generic STUN/TURN (possible Teams/WhatsApp/other);20;0
+fb_mess-Samsung_S7-iPhone_6.pcap;2021-07-23T15:08:46.823218;2021-07-23T15:10:11.778147;85;10.215.173.1;Not Found;192.168.50.118;34890;192.168.50.118;Generic STUN/TURN (possible Teams/WhatsApp/other);18;0
+fb_mess-Samsung_S7-iPhone_6.pcap;2021-07-23T15:08:46.865483;2021-07-23T15:10:12.980136;86;10.215.173.1;Not Found;94.90.124.2;34890;94.90.124.2;Generic STUN/TURN (possible Teams/WhatsApp/other);18;0
+stun-ice-testcall.pcap;2013-08-23T00:38:35.029606;2013-08-23T00:38:55.217578;20;192.168.43.155;Not Found;74.125.141.127;59977;74.125.141.127;WebRTC / Google STUN;0;4
+stun-ice-testcall.pcap;2013-08-23T00:38:48.184058;2013-08-23T00:38:56.139862;8;192.168.43.155;70.199.128.46:4587;155.212.214.188;59977;155.212.214.188;WebRTC / Google STUN;100;44
