@@ -157,37 +157,34 @@ def analyze_pcap_file(filepath: str) -> List[Dict[str, Any]]:
 
 
 def write_csv_report(events: List[Dict[str, Any]], csv_path: str):
-    # La lista di eventi è già appiattita qui
     if not events:
         print("[!] Nessun evento da scrivere nel CSV.")
         return
 
-    # Usiamo le chiavi del primo evento per l'intestazione
     fieldnames = list(events[0].keys())
 
     try:
-        # NOTA: Uso del delimitatore ',' standard, per ';' cambia qui
         with open(csv_path, 'w', newline='', encoding='utf-8') as fh:
             writer = csv.DictWriter(fh, fieldnames=fieldnames,
-                                    delimiter=';')  # Ho rimesso il ; come nel tuo file precedente
+                                    delimiter=';')
             writer.writeheader()
             writer.writerows(events)
-        print(f"[+] Report CSV scritto in {csv_path}")
+        print(f"[+] Report CSV  completed - available in {csv_path}")
     except Exception as e:
-        print(f"[-] Errore durante la scrittura del CSV: {e}")
+        print(f"[-] Error writing CSV: {e}")
 
 
 def write_json_report(events: List[Dict[str, Any]], json_path: str):
     if not events:
-        print("[!] Nessun evento da scrivere nel JSON.")
+        print("[!] No event to write.")
         return
 
     try:
         with open(json_path, 'w', encoding='utf-8') as fh:
             json.dump(events, fh, indent=2)
-        print(f"[+] Report JSON scritto in {json_path}")
+        print(f"[+] JSON report available in {json_path}")
     except Exception as e:
-        print(f"[-] Errore durante la scrittura del JSON: {e}")
+        print(f"[-] Error writing JSON: {e}")
 
 
 
