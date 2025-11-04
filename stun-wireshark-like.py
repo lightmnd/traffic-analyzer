@@ -83,7 +83,9 @@ def parse_stun_attributes_flat(udp_payload: bytes) -> Tuple[Dict[str, str], byte
 
         offset = 20  # Start from STUN
 
+        count = 0
         while offset + 4 <= len(udp_payload):
+            count += 1
             attr_type, attr_len = struct.unpack("!HH", udp_payload[offset:offset + 4])
             offset += 4
 
@@ -113,6 +115,15 @@ def parse_stun_attributes_flat(udp_payload: bytes) -> Tuple[Dict[str, str], byte
                 if decoded:
                     attributes["XOR-PEER-ADDRESS_IP"] = decoded.split(":")[0]
                     attributes["XOR-PEER-ADDRESS_PORT"] = decoded.split(":")[1]
+
+            # 0x0014 REALM
+            if attr_type == 0x0014:
+                try:
+                    decoded = attr_value
+                    if decoded:
+                        attributes["REALM"] = decoded.decode("utf-8")
+                except UnicodeDecodeError:
+                    print('here exception')
 
             offset += attr_len
             # Padding handling 32 bit (4 byte)
@@ -186,13 +197,14 @@ def analyze_pcap_file(filepath: str) -> List[Dict[str, Any]]:
                     "dst_port": pkt[TCP].dport,
                     "stun_classes": msg_type_class,
                     "stun_method": msg_type_method,
-                    "transaction_id": tid.hex() if tid else "N/D",
-                    "xor_mapped_address_ip": attributes.get("XOR-MAPPED-ADDRESS_IP", "N/D"),
-                    "xor_mapped_address_port": attributes.get("XOR-MAPPED-ADDRESS_PORT", "N/D"),
-                    "xor_relayed_address_ip": attributes.get("XOR-RELAYED-ADDRESS_IP", "N/D"),
-                    "xor_relayed_address_port": attributes.get("XOR-RELAYED-ADDRESS_PORT", "N/D"),
-                    "xor_peer_address_ip": attributes.get("XOR-PEER-ADDRESS_IP", "N/D"),
-                    "xor_peer_address_port": attributes.get("XOR-PEER-ADDRESS_PORT", "N/D"),
+                    "transaction_id": tid.hex() if tid else "",
+                    "xor_mapped_address_ip": attributes.get("XOR-MAPPED-ADDRESS_IP", ""),
+                    "xor_mapped_address_port": attributes.get("XOR-MAPPED-ADDRESS_PORT", ""),
+                    "xor_relayed_address_ip": attributes.get("XOR-RELAYED-ADDRESS_IP", ""),
+                    "xor_relayed_address_port": attributes.get("XOR-RELAYED-ADDRESS_PORT", ""),
+                    "xor_peer_address_ip": attributes.get("XOR-PEER-ADDRESS_IP", ""),
+                    "xor_peer_address_port": attributes.get("XOR-PEER-ADDRESS_PORT", ""),
+                    "realm": attributes.get("REALM")
                 }
 
                 stun_events_flat.append(event)
@@ -244,13 +256,14 @@ def analyze_pcap_file(filepath: str) -> List[Dict[str, Any]]:
                         "dst_port": pkt[UDP].dport,
                         "stun_classes": msg_type_class,
                         "stun_method": msg_type_method,
-                        "transaction_id": tid.hex() if tid else "N/D",
-                        "xor_mapped_address_ip": attributes.get("XOR-MAPPED-ADDRESS_IP", "N/D"),
-                        "xor_mapped_address_port": attributes.get("XOR-MAPPED-ADDRESS_PORT", "N/D"),
-                        "xor_relayed_address_ip": attributes.get("XOR-RELAYED-ADDRESS_IP", "N/D"),
-                        "xor_relayed_address_port": attributes.get("XOR-RELAYED-ADDRESS_PORT", "N/D"),
-                        "xor_peer_address_ip": attributes.get("XOR-PEER-ADDRESS_IP", "N/D"),
-                        "xor_peer_address_port": attributes.get("XOR-PEER-ADDRESS_PORT", "N/D"),
+                        "transaction_id": tid.hex() if tid else "",
+                        "xor_mapped_address_ip": attributes.get("XOR-MAPPED-ADDRESS_IP", ""),
+                        "xor_mapped_address_port": attributes.get("XOR-MAPPED-ADDRESS_PORT", ""),
+                        "xor_relayed_address_ip": attributes.get("XOR-RELAYED-ADDRESS_IP", ""),
+                        "xor_relayed_address_port": attributes.get("XOR-RELAYED-ADDRESS_PORT", ""),
+                        "xor_peer_address_ip": attributes.get("XOR-PEER-ADDRESS_IP", ""),
+                        "xor_peer_address_port": attributes.get("XOR-PEER-ADDRESS_PORT", ""),
+                        "realm": attributes.get("REALM")
                     }
 
                     stun_events_flat.append(event)
@@ -277,7 +290,7 @@ def analyze_pcap_file(filepath: str) -> List[Dict[str, Any]]:
                     # define STUN_CREATEPERMISSION 0x0008
     print(f"Events IP:PORT(s): {events_ip_port}")
 
-    # get_stream(list_stream)
+    get_stream(list_stream)
     print(f"[+] Found {len(stun_events_flat)} STUN events.")
     return stun_events_flat
 
@@ -294,24 +307,31 @@ def create_conversation_contact_points():
     for ip, ports in events_ip_port.items():
         target_public_ip_found = False
         peer_ip_found = False
+        xor_peer_address_found = False
+        peer_address_found_present = False
         target_ip_found = False
         is_stun_server = False
 
+        # Standard port
         if 3478 in ports:
+            is_stun_server = True
+
+        # Telegram port(s)
+        if 1400 in ports:
             is_stun_server = True
 
         if not is_stun_server:
             for item in all_events_flat:
                 # Check target ip not with 3478 port
-                if ((item['src_ip'] == ip) and (item['dst_port'] == 3478)) or ((item['dst_ip'] == ip) and (item['src_port'] == 3478)):
-                    print(f'Target IP: {ip}')
+                if ((item['src_ip'] == ip) and (item['dst_port'] == 3478 or item['dst_port'] == 1400)) or ((item['dst_ip'] == ip) and (item['src_port'] == 3478 or item['src_port'] == 1400) and is_private_ip(ip)):
+                    print(f'Target Private IP: {ip}')
                     target_ip_found = True
                     break
 
         if not target_ip_found and not is_stun_server:
             for item_two in all_events_flat:
                 # CHeck if attribute is present
-                if (item_two['src_port'] == 3478) and (item_two['xor_mapped_address_ip'] == ip):
+                if (item_two['src_port'] == 3478 or item_two['src_port'] == 1400) and (item_two['xor_mapped_address_ip'] == ip and not is_private_ip(ip)):
                     print(f'Target Public IP: {ip}')
                     target_public_ip_found = True
                     break
@@ -319,13 +339,42 @@ def create_conversation_contact_points():
         if not target_public_ip_found and not target_ip_found and not is_stun_server:
             for item_three in all_events_flat:
                 # Check peer address
-                if (item_three['stun_classes'] == 0 and item_three['stun_method']  == 1) and (item_three['dst_ip'] == ip):
-                    print(f'Peer Address IP: {ip}')
+                if (item_three['stun_classes'] == 0 and item_three['stun_method']  == 1) and (item_three['dst_ip'] == ip and not is_private_ip(ip)):
                     peer_ip_found = True
-                    break
+                if item_three['xor_peer_address_ip'] != '':
+                    peer_address_found_present = True
+                    if item_three['xor_peer_address_ip'] == ip:
+                        xor_peer_address_found = True
+            # WA
+            if peer_ip_found and not peer_address_found_present:
+                print(f'Peer Address IP (Wathsapp): {ip}')
+            # Others
+            if peer_ip_found and peer_address_found_present and xor_peer_address_found:
+                print(f'Peer Address IP (Others): {ip}')
 
         if target_ip_found == False and not is_stun_server and target_public_ip_found == False and peer_ip_found == False:
-            print(ip, ports)
+            print('Unknown, no IP, no STUN, not an important address:', ip, ports)
+
+def is_private_ip(ip_addr):
+    ip_parse= ip_addr.split(".")
+    if len(ip_parse) >= 4:
+
+        # ----
+        if int(ip_parse[0]) == 10:
+            return True
+        if int(ip_parse[0]) == 100 and 64 <= int(ip_parse[1]) <= 127:
+            return True
+        if int(ip_parse[0]) == 172 and 16 <= int(ip_parse[1]) <= 31:
+            return True
+        if int(ip_parse[0]) == 192 and int(ip_parse[1]) == 0 and int(ip_parse[2]) == 0:
+            return True
+        if int(ip_parse[0]) == 192 and int(ip_parse[1]) == 168:
+            return True
+        if int(ip_parse[0]) == 198 and 18 <= int(ip_parse[1]) <= 19:
+            return True
+
+    return False
+
 
 def get_stream(list_stream: Dict):
     sorted_stream = sorted(list_stream.items(), key=lambda item: item[1][0], reverse=True)[:2]
