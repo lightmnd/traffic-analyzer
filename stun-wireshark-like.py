@@ -166,6 +166,7 @@ def analyze_pcap_file(filepath: str) -> List[Dict[str, Any]]:
 
     for idx, pkt in enumerate(packets):
 
+        # GET STUN  over TCP
         if IP in pkt and TCP in pkt:
             tcp_payload = bytes(pkt[TCP].payload)
             if len(tcp_payload) < 20:
@@ -209,7 +210,6 @@ def analyze_pcap_file(filepath: str) -> List[Dict[str, Any]]:
 
                 stun_events_flat.append(event)
 
-                # Stun over TCP
                 create_events_ip_port_list(pkt[IP].src, pkt[TCP].sport)
                 create_events_ip_port_list(pkt[IP].dst, pkt[TCP].dport)
                 create_events_ip_port_list(attributes.get("XOR-MAPPED-ADDRESS_IP", ""),
@@ -235,8 +235,6 @@ def analyze_pcap_file(filepath: str) -> List[Dict[str, Any]]:
 
             else:
                 attributes, tid, stun_type = parse_stun_attributes_flat(udp_payload)
-
-                # get STUN info parsing STUN over TCP
 
                 msg_type_class = None
                 msg_type_method = None
@@ -275,8 +273,7 @@ def analyze_pcap_file(filepath: str) -> List[Dict[str, Any]]:
                     create_events_ip_port_list(attributes.get("XOR-PEER-ADDRESS_IP", ""), attributes.get("XOR-PEER-ADDRESS_PORT", ""))
                     create_events_ip_port_list(attributes.get("XOR-RELAYED-ADDRESS_IP", ""), attributes.get("XOR-RELAYED-ADDRESS_PORT", ""))
 
-                    # events_ip_port.append()
-
+                    # STUN REFERENCES
                     ### stun classes
                     # define STUN_REQUEST 0x0
                     # define STUN_INDICATION 0x01
@@ -288,6 +285,7 @@ def analyze_pcap_file(filepath: str) -> List[Dict[str, Any]]:
                     # define STUN_ALLOCATE 0x0003
                     # define STUN_SEND 0x0006
                     # define STUN_CREATEPERMISSION 0x0008
+
     print(f"Events IP:PORT(s): {events_ip_port}")
 
     get_stream(list_stream)
@@ -308,6 +306,7 @@ def create_conversation_contact_points():
         target_public_ip_found = False
         peer_ip_found = False
         xor_peer_address_found = False
+        xor_relayed_address_found = ""
         peer_address_found_present = False
         target_ip_found = False
         is_stun_server = False
@@ -345,15 +344,30 @@ def create_conversation_contact_points():
                     peer_address_found_present = True
                     if item_three['xor_peer_address_ip'] == ip:
                         xor_peer_address_found = True
-            # WA
-            if peer_ip_found and not peer_address_found_present:
-                print(f'Peer Address IP (Wathsapp): {ip}')
-            # Others
-            if peer_ip_found and peer_address_found_present and xor_peer_address_found:
-                print(f'Peer Address IP (Others): {ip}')
 
+                if item_three['xor_relayed_address_ip'] == ip:
+                    xor_relayed_address_found = ip
+
+            # Eg: WhatsApp
+            if peer_ip_found and not peer_address_found_present and not xor_relayed_address_found:
+                print(f'Peer Address IP (Wathsapp): {ip}')
+            # Eg: Telegram or other apps
+            elif peer_ip_found and peer_address_found_present and xor_peer_address_found and not xor_relayed_address_found:
+
+                stream_ip_1 = collect_stream_info[2]['stream_ip_port[0]'].split(':')[0] if len(collect_stream_info) > 2 else ""
+                stream_ip_2 = collect_stream_info[3]['stream_ip_port[1]'].split(':')[0] if len(collect_stream_info) > 3 else ""
+
+                # This scenario can keep track of a multiple Signal App used for the same account is running on different devices
+                if ip != stream_ip_1 and ip != stream_ip_2:
+                    print(f'Peer Address IP (Signal): {ip}')
+                else:
+                    print(f'Peer Address IP (PRINCIPAL Signal): {ip}')
+            else:
+                # This block captures the IPs that are not included in the WA/Others/Signal category.
+                # Here we are excluding the Relay Server without printing it
+                pass
         if target_ip_found == False and not is_stun_server and target_public_ip_found == False and peer_ip_found == False:
-            print('Unknown, no IP, no STUN, not an important address:', ip, ports)
+            print('Unknown, no IP, no STUN, not an important address(?):', ip, ports)
 
 def is_private_ip(ip_addr):
     ip_parse= ip_addr.split(".")
